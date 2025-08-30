@@ -2,7 +2,7 @@
 import sys
 from typing import Iterable, List
 from lexer import InvalidTokenException, extract_tokens
-from models import Token
+from lexer import Token
 
 import logging
 

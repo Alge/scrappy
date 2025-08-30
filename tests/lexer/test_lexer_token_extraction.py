@@ -1,8 +1,8 @@
 
 import logging
-from lexer import extract_tokens
+from lexer import TokenType, extract_tokens
 
-from models import Token, TokenType
+from lexer import Token
 
 import pytest
 
