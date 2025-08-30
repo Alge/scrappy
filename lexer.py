@@ -4,7 +4,7 @@ from enum import Enum
 import logging
 import re
 import sys
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Set
 
 
 class InvalidTokenException(Exception):
@@ -31,10 +31,11 @@ class TokenType(str, Enum):
     DOUBLE_PLUS = "++"
     MINUS = "-"
     EQUALS = "="
-    ATOM = "ATOM"
+    ATOM = "#ATOM"
     INTERPOLATED_TEXT = "INTERPOLATED_TEXT"
     TEXT = "TEXT"
     SLASH = "/"
+    MULTIPLY = "*"
     GREATER_THAN = ">"
     LESS_THAN = "<"
     PIPE_FORWARD = ">>"
@@ -50,7 +51,7 @@ class TokenType(str, Enum):
     HEXADECIMAL = "~f3123"
     BASE64 = "~~abcd123="
     UNDERSCORE = "_"
-    COMMENT = "-- COMMENT"
+    COMMENT = "-- Comment"
 
 
 lexeme_mapper: Dict[str, TokenType] = {
@@ -70,6 +71,7 @@ lexeme_mapper: Dict[str, TokenType] = {
     r"\+": TokenType.PLUS,
     r"-": TokenType.MINUS,
     r"/": TokenType.SLASH,
+    r"\*": TokenType.MULTIPLY,
     r">>": TokenType.PIPE_FORWARD,
     r">": TokenType.GREATER_THAN,
     r"<": TokenType.LESS_THAN,
@@ -84,8 +86,9 @@ lexeme_mapper: Dict[str, TokenType] = {
     r"~[0-9a-fA-F]+": TokenType.HEXADECIMAL,
     r"~~(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?": TokenType.BASE64,
     r"_": TokenType.UNDERSCORE,
-
 }
+
+ignored_tokens: Set[TokenType] = {TokenType.COMMENT, TokenType.WHITE_SPACE}
 
 
 class Token:
@@ -93,7 +96,7 @@ class Token:
     lexeme: str
     line: int
 
-    def __init__(self, token_type: TokenType, lexeme: str, line: int):
+    def __init__(self, token_type: TokenType, lexeme: str, line: int = 0):
         self.token_type = token_type
         self.lexeme = lexeme
         self.line = line
@@ -123,7 +126,9 @@ def extract_tokens(lines: Iterable[str]) -> List[Token]:
                     lexeme = match.group(0)
                     token = Token(token_type=token_type,
                                   lexeme=lexeme, line=current_line_number)
-                    tokens.append(token)
+
+                    if token.token_type not in ignored_tokens:
+                        tokens.append(token)
                     current_line_offset += len(token.lexeme)
                     line = line[len(token.lexeme):]
                     break

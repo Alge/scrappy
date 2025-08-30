@@ -14,10 +14,10 @@ import pytest
 
         ([";"], [TokenType.SEMI_COLON, TokenType.END_OF_FILE]),
 
-        ([" "], [TokenType.WHITE_SPACE, TokenType.END_OF_FILE]),
-        (["\t"], [TokenType.WHITE_SPACE, TokenType.END_OF_FILE]),
-        (["\n"], [TokenType.WHITE_SPACE, TokenType.END_OF_FILE]),
-        ([" \t  \t\n"], [TokenType.WHITE_SPACE, TokenType.END_OF_FILE]),
+        # ([" "], [TokenType.WHITE_SPACE, TokenType.END_OF_FILE]),
+        # (["\t"], [TokenType.WHITE_SPACE, TokenType.END_OF_FILE]),
+        # (["\n"], [TokenType.WHITE_SPACE, TokenType.END_OF_FILE]),
+        # ([" \t  \t\n"], [TokenType.WHITE_SPACE, TokenType.END_OF_FILE]),
 
         (["->"], [TokenType.RIGHT_ARROW, TokenType.END_OF_FILE]),
 
@@ -45,6 +45,8 @@ import pytest
         (['"hello` "🐸" `frog"'], [TokenType.INTERPOLATED_TEXT, TokenType.END_OF_FILE]),
 
         (["/"], [TokenType.SLASH, TokenType.END_OF_FILE]),
+
+        (["*"], [TokenType.MULTIPLY, TokenType.END_OF_FILE]),
 
         ([">>"], [TokenType.PIPE_FORWARD, TokenType.END_OF_FILE]),
 
@@ -85,8 +87,8 @@ import pytest
         (["~~aGVsbG8gd29ybGQ="], [TokenType.BASE64, TokenType.END_OF_FILE]),
 
         (["_"], [TokenType.UNDERSCORE, TokenType.END_OF_FILE]),
-        (["-- This is a comment, and everything here + !? = should be ignored `asd`"],
-         [TokenType.COMMENT, TokenType.END_OF_FILE]),
+        # (["-- This is a comment, and everything here + !? = should be ignored `asd`"],
+        #  [TokenType.COMMENT, TokenType.END_OF_FILE]),
 
 
     ]
@@ -121,16 +123,16 @@ def test_token_extraction(test_input, expected_token_types):
          [(TokenType.INTERPOLATED_TEXT, '"a string with `"expressions"` in it"')]),
         ("123",         [(TokenType.INTEGER, "123")]),
         ("45.67",       [(TokenType.FLOAT, "45.67")]),
-        ("  \t ",      [(TokenType.WHITE_SPACE, "  \t ")]),
+        # ("  \t ",      [(TokenType.WHITE_SPACE, "  \t ")]),
 
         # Multi-token line with different lexemes
         (
             "greet #person ->",
             [
                 (TokenType.IDENTIFIER, "greet"),
-                (TokenType.WHITE_SPACE, " "),
+                # (TokenType.WHITE_SPACE, " "),
                 (TokenType.ATOM, "#person"),
-                (TokenType.WHITE_SPACE, " "),
+                # (TokenType.WHITE_SPACE, " "),
                 (TokenType.RIGHT_ARROW, "->"),
             ]
         ),
@@ -149,17 +151,17 @@ def test_token_extraction(test_input, expected_token_types):
             '| #friend n -> "yo" ++ name',
             [
                 (TokenType.PIPE, "|"),
-                (TokenType.WHITE_SPACE, " "),
+                # (TokenType.WHITE_SPACE, " "),
                 (TokenType.ATOM, "#friend"),
-                (TokenType.WHITE_SPACE, " "),
+                # (TokenType.WHITE_SPACE, " "),
                 (TokenType.IDENTIFIER, "n"),
-                (TokenType.WHITE_SPACE, " "),
+                # (TokenType.WHITE_SPACE, " "),
                 (TokenType.RIGHT_ARROW, "->"),
-                (TokenType.WHITE_SPACE, " "),
+                # (TokenType.WHITE_SPACE, " "),
                 (TokenType.TEXT, '"yo"'),
-                (TokenType.WHITE_SPACE, " "),
+                # (TokenType.WHITE_SPACE, " "),
                 (TokenType.DOUBLE_PLUS, "++"),
-                (TokenType.WHITE_SPACE, " "),
+                # (TokenType.WHITE_SPACE, " "),
                 (TokenType.IDENTIFIER, "name"),
             ]
         ),
@@ -167,8 +169,6 @@ def test_token_extraction(test_input, expected_token_types):
         # Edge case: Empty input should yield no lexemes
         ("", []),
 
-        # Edge case: Input with only whitespace
-        ("\n\t ", [(TokenType.WHITE_SPACE, "\n\t ")]),
     ]
 )
 def test_token_lexemes_are_correct(test_input, expected_tokens):
