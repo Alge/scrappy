@@ -1,0 +1,15 @@
+; greet : person -> text =
+  | #cowboy -> "howdy"
+  | #ron n -> "hi " ++ text/repeat n "a" ++ "ron"
+  | #parent #m -> "hey mom"
+  | #parent #f -> "greetings father"
+  | #friend n -> "yo" |> list/repeat n |> string/join " "
+  | #stranger "felicia" -> "bye"
+  | #stranger name -> "hello " ++ name
+
+; person :
+  #cowboy
+  #ron int
+  #parent (#m #f)
+  #friend int
+  #stranger text
