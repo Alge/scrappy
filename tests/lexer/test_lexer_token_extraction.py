@@ -87,6 +87,9 @@ import pytest
         (["~~aGVsbG8gd29ybGQ="], [TokenType.BASE64, TokenType.END_OF_FILE]),
 
         (["_"], [TokenType.UNDERSCORE, TokenType.END_OF_FILE]),
+        (["!"], [TokenType.EXCLAMATION_MARK, TokenType.END_OF_FILE]),
+        (["!HELLO"], [TokenType.EXCLAMATION_MARK,
+         TokenType.IDENTIFIER, TokenType.END_OF_FILE]),
         # (["-- This is a comment, and everything here + !? = should be ignored `asd`"],
         #  [TokenType.COMMENT, TokenType.END_OF_FILE]),
 

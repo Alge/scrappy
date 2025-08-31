@@ -52,6 +52,7 @@ class TokenType(str, Enum):
     BASE64 = "~~abcd123="
     UNDERSCORE = "_"
     COMMENT = "-- Comment"
+    EXCLAMATION_MARK = "!"
 
 
 lexeme_mapper: Dict[str, TokenType] = {
@@ -86,6 +87,7 @@ lexeme_mapper: Dict[str, TokenType] = {
     r"~[0-9a-fA-F]+": TokenType.HEXADECIMAL,
     r"~~(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?": TokenType.BASE64,
     r"_": TokenType.UNDERSCORE,
+    r"!": TokenType.EXCLAMATION_MARK,
 }
 
 ignored_tokens: Set[TokenType] = {TokenType.COMMENT, TokenType.WHITE_SPACE}

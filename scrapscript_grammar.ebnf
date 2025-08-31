@@ -1,0 +1,68 @@
+(* ======================================== *)
+(*     The ScrapScript Language Grammar     *)
+(* ======================================== *)
+
+(* --- Top-Level Structure --- *)
+(* A program consists of one or more statements, separated by ";" *)
+(* At the end of a program there might be any number of semicolons (including 0) *)
+
+program ::= statement (";" + statement)* ";"*
+
+
+(* --- Statements ---*)
+(* A statment consists of either        *)
+(*   - A expression statment            *)
+(*   - A function definition            *)
+(*   - A type definition                *)
+
+statement ::= expression_statement | function_definition | type_definition
+
+(* Function definitions *)
+
+function_definition ::= IDENTIFIER "=" expression
+
+(* --- expressions ---*)
+(* Expressions consists of a prefix expression followed by any number *)
+(* of infix operations. This corresponds to the Pratt parser implemented *)
+
+expression_statement ::= expression
+
+
+expression ::= prefix_expression (infix_operation)*
+
+pattern_match_expression ::= ("|" pattern "->" expression)+
+
+pattern ::= literal | IDENTIFIER | "_"
+
+infix_operation ::= infix_operator expression
+
+prefix_expression ::= IDENTIFIER
+                    | unary_expression
+                    | "(" expression ")"
+                    | literal
+                    | pattern_match_expression
+
+unary_expression ::= prefix_operator expression
+
+(* Binary expressions are implicit from the above, as *)
+(* "expression infix_operator expression" already matches the rules *)
+(* binary_expression ::= expression infix_operator expression *)
+
+infix_operator ::= "+" | "-" | "*" | "/"
+prefix_operator ::= "-" | "!"
+
+literal ::= INTEGER | FLOAT | TEXT | HEX | BASE64
+
+
+(* ======================================================= *)
+(*   Precedence and Associativity Table                    *)
+(* ======================================================= *)
+(* ------------------------------------------------------- *)
+(* | Operator | Type  | Precedence | Associativity         *)
+(* ------------------------------------------------------- *)
+(* |   + -    | Infix |     10     | Left                  *)
+(* |   * /    | Infix |     20     | Left                  *)
+(* |    -     | Prefix|     30     | (N/A - Right)         *)
+(* |    !     | Prefix|     30     | (N/A - Right)         *)
+(* ------------------------------------------------------- *)
+
