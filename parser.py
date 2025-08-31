@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from types import MappingProxyType
-from typing import Iterable, Iterator, List
+from typing import Dict, Iterable, Iterator, List
 from lexer import Token, TokenType
 
 import logging
@@ -14,20 +14,25 @@ class Operator(str, Enum):
     SUBTRACT = "-"
 
 
+class PrecedencePosition(str, Enum):
+    PREFIX = "PREFIX"
+    INFIX = "INFIX"
+
+
 # Used for calculating the precendence of tokens
-OPERATOR_PRECEDENCE: MappingProxyType[TokenType, int] = MappingProxyType(
+OPERATOR_PRECEDENCE: MappingProxyType[PrecedencePosition, MappingProxyType[TokenType, int]] = MappingProxyType(
     {
-        TokenType.PLUS: 10,
-        TokenType.MINUS: 10,
-        TokenType.MULTIPLY: 20,
-        TokenType.SLASH: 20,
+        PrecedencePosition.INFIX: MappingProxyType({
+            TokenType.PLUS: 10,
+            TokenType.MINUS: 10,
+            TokenType.MULTIPLY: 20,
+            TokenType.SLASH: 20,
+        }),
+        PrecedencePosition.PREFIX: MappingProxyType({
+            TokenType.MINUS: 100,
+        })
     }
 )
-
-
-@dataclass
-class Statement():
-    ...
 
 
 @dataclass
@@ -39,11 +44,19 @@ class Expression():
 class Identifier():
     name: str
 
+    def __repr__(self) -> str:
+        # Represents an identifier just by its name for clarity.
+        return self.name
+
 
 @dataclass
 class UnaryOperation(Expression):
-    right: Expression
-    operator: Token
+    expression: Expression
+    operator: Operator
+
+    def __repr__(self) -> str:
+        # Example: (- 5)
+        return f"({self.operator} {self.expression})"
 
 
 @dataclass
@@ -51,6 +64,77 @@ class BinaryOperation(Expression):
     left: Expression
     right: Expression
     operator: Operator
+
+    def __repr__(self) -> str:
+        # Example: (+ 1 (* 2 3))
+        return f"({self.operator.value} {self.left} {self.right})"
+
+
+@dataclass
+class Literal(Expression):
+    pass
+
+
+@dataclass
+class IntegerLiteral(Literal):
+    value: int
+
+    def __repr__(self) -> str:
+        # Represents a number literal simply by its value.
+        return str(self.value)
+
+
+@dataclass
+class FloatLiteral(Literal):
+    value: float
+
+    def __repr__(self) -> str:
+        # Represents a number literal simply by its value.
+        return str(self.value)
+
+
+@dataclass
+class TextLiteral(Literal):
+    value: str
+
+    def __repr__(self) -> str:
+        # Represents a number literal simply by its value.
+        return self.value
+
+
+@dataclass
+class InterpolatedTextLiteral(Literal):
+    value: str
+
+    def __repr__(self) -> str:
+        # Use backticks to distinguish from normal strings
+        return f'`{self.value}`'
+
+
+@dataclass
+class HexLiteral(Literal):
+    value: str  # TODO, maybe store as int?
+
+    def __repr__(self) -> str:
+        return f"Hex({self.value})"
+
+
+@dataclass
+class HashReference(Literal):
+    hash: str
+
+    def __repr__(self) -> str:
+        return self.hash
+
+
+@dataclass
+class Statement():
+    ...
+
+
+@dataclass
+class ExpressionStatement(Statement):
+    expression: Expression
 
 
 @dataclass
@@ -60,48 +144,8 @@ class FunctionDefinition(Statement):
 
 
 @dataclass
-class Literal(Expression):
-    pass
-
-
-@dataclass
 class Program():
     declarations: List[Statement]
-
-
-@dataclass
-class IntegerLiteral(Literal):
-    value: int
-
-
-@dataclass
-class FloatLiteral(Literal):
-    value: float
-
-
-@dataclass
-class TextLiteral(Literal):
-    value: str
-
-
-@dataclass
-class InterpolatedTextLiteral(Literal):
-    value: str
-
-
-@dataclass
-class HexLiteral(Literal):
-    value: str  # TODO, maybe store as int?
-
-
-# @dataclass
-# class Identifier(Literal):
-#    name = str
-
-
-@dataclass
-class HashReference(Statement):
-    hash: str
 
 
 class Parser:
@@ -124,8 +168,12 @@ class Parser:
         self.advance()
 
     @staticmethod
-    def get_operator_precedence(token_type: TokenType) -> int:
-        return OPERATOR_PRECEDENCE.get(token_type, 0)
+    def get_operator_precedence(token_type: TokenType, position: PrecedencePosition) -> int:
+        table = OPERATOR_PRECEDENCE.get(position)
+        if table is None:
+            raise Exception(f"Can't find precedance table for {position}")
+
+        return table.get(token_type, 0)
 
     def advance(self) -> None:
         self._current_token = self._next_token
@@ -204,7 +252,7 @@ class Parser:
                 return FloatLiteral(float(token.lexeme))
             case TokenType.TEXT:
                 # Strip quotation characters
-                return TextLiteral(token.lexeme[1:-1])
+                return TextLiteral(token.lexeme)
             case TokenType.START_PARANTHESIS:
                 # Here we have a nested expression.
                 nested_expression = self.parse_expression()
@@ -213,6 +261,17 @@ class Parser:
                 assert self.current.token_type == TokenType.END_PARANTHESIS
                 self.advance()
                 return nested_expression
+            case TokenType.MINUS:
+                # Unary operation "-3"
+                return UnaryOperation(
+                    operator=Operator.SUBTRACT,
+                    expression=self.parse_expression(
+                        precedence=self.get_operator_precedence(
+                            token_type=TokenType.MINUS,
+                            position=PrecedencePosition.PREFIX
+                        )
+                    )
+                )
 
         raise Exception("Failed parsing prefix")
 
@@ -224,8 +283,8 @@ class Parser:
 
         left_term: Expression = self.parse_prefix()
 
-        while precedence < self.get_operator_precedence(self.current.token_type):
-            # If the current token has higher precedence than us, we need to
+        while precedence < self.get_operator_precedence(self.current.token_type, position=PrecedencePosition.INFIX):
+            # We have lower precedance than the next expression,
             # parse that expression first!
 
             operator_token = self.current
@@ -234,7 +293,8 @@ class Parser:
 
             right_term = self.parse_expression(
                 precedence=self.get_operator_precedence(
-                    operator_token.token_type
+                    operator_token.token_type,
+                    position=PrecedencePosition.INFIX
                 )
             )
 
