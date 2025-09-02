@@ -323,7 +323,7 @@ class Parser:
             TokenType.EXCLAMATION_MARK,
             TokenType.START_PARANTHESIS,
             TokenType.PIPE,
-            TokenType.START_CURLY_BRACKETS,
+            TokenType.START_CURLY_BRACKETS,  # TODO: This is not actually implemented
         ]
 
     def parse_prefix_expression(self) -> Expression:
@@ -407,8 +407,6 @@ class Parser:
 
         while self._can_start_prefix_expression(self.current):
             arguments.append(self.parse_prefix_expression())
-
-        # TODO: Actually parse the expressions here. How do we know when to stop?
 
         return VariantConstruction(type_name=type_name, variant_name=variant_name, arguments=arguments)
 

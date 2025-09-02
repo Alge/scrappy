@@ -139,7 +139,7 @@ p = mark.parametrize
            Identifier(name="my_var")
        ),
 
-       # An identifier as part of a larger expression ---
+       # An identifier as part of a larger expression
        (
            # Code: `x + 1`
            [
@@ -155,6 +155,37 @@ p = mark.parametrize
                right=IntegerLiteral(1)
            )
        ),
+
+       # pattern_match_expression with infix operator
+       (
+           # Code: `(| 1 -> 10) + 5`
+           [
+               Token(token_type=TokenType.START_PARANTHESIS, lexeme="("),
+               Token(token_type=TokenType.PIPE, lexeme=""),
+               Token(token_type=TokenType.INTEGER, lexeme="1"),
+               Token(token_type=TokenType.RIGHT_ARROW, lexeme="->"),
+               Token(token_type=TokenType.INTEGER, lexeme="10"),
+               Token(token_type=TokenType.END_PARANTHESIS, lexeme=")"),
+               Token(token_type=TokenType.PLUS, lexeme="+"),
+               Token(token_type=TokenType.INTEGER, lexeme="5"),
+               Token(token_type=TokenType.END_OF_FILE, lexeme=""),
+           ],
+           # Expected AST:
+           BinaryOperation(
+               left=PatternMatchExpression(
+                   clauses=[
+                       PatternClause(
+                           pattern=LiteralPattern(literal=IntegerLiteral(1)),
+                           body=IntegerLiteral(10)
+                       )
+                   ]
+               ),
+               operator=Operator.ADD,
+               right=IntegerLiteral(5)
+           )
+       ),
+
+
    ]
    )
 def test_parse_expression(input, expected_output):
@@ -218,7 +249,38 @@ def test_parse_expression(input, expected_output):
                )
            )
        ),
+       #  body of a pattern clause is a full expression
+       (
+           # Code: `f = | 1 -> scoop::vanilla`
+           [
+               Token(token_type=TokenType.IDENTIFIER, lexeme="f"),
+               Token(token_type=TokenType.EQUALS, lexeme="="),
+               Token(token_type=TokenType.PIPE, lexeme="|"),
+               Token(token_type=TokenType.INTEGER, lexeme="1"),
+               Token(token_type=TokenType.RIGHT_ARROW, lexeme="->"),
+               Token(token_type=TokenType.IDENTIFIER, lexeme="scoop"),
+               Token(token_type=TokenType.DOUBLE_COLON, lexeme="::"),
+               Token(token_type=TokenType.IDENTIFIER, lexeme="vanilla"),
+               Token(token_type=TokenType.END_OF_FILE, lexeme=""),
+           ],
+           # Expected AST:
+           FunctionDefinition(
+               name=Identifier("f"),
+               body=PatternMatchExpression(
+                   clauses=[
+                       PatternClause(
+                           pattern=LiteralPattern(literal=IntegerLiteral(1)),
+                           body=VariantConstruction(
+                               type_name=Identifier("scoop"),
+                               variant_name=Identifier("vanilla"),
+                               arguments=[]
+                           )
+                       )
+                   ]
+               )
+           )
 
+       ),
 
    ]
    )
@@ -238,7 +300,7 @@ def test_parse_function(input, expected_output):
 
 @p("input_tokens, expected_ast",
     [
-        # --- Test Case 1: Simplest type definition ---
+        # Simplest type definition
         (
             # Code: `scoop : #vanilla #chocolate`
             [
@@ -325,7 +387,7 @@ def test_parse_function(input, expected_output):
             )
         ),
 
-        # --- Test Case 4: A variant with a group FOLLOWED by another variant ---
+        # A variant with a group FOLLOWED by another variant
         # This test is designed to catch the failure to consume the ')' token.
         (
             # Code: `person : #parent (#m) #cowboy`
@@ -575,6 +637,37 @@ def test_parse_program(input_tokens, expected_ast):
                 right=IntegerLiteral(2)
             )
         ),
+
+        # Variant construction where one argument is a parenthesize expression
+        (
+            # Code: `point::d2 (1 + 2) 3 `
+            [
+                Token(token_type=TokenType.IDENTIFIER, lexeme="point"),
+                Token(token_type=TokenType.DOUBLE_COLON, lexeme="::"),
+                Token(token_type=TokenType.IDENTIFIER, lexeme="d2"),
+                Token(token_type=TokenType.START_PARANTHESIS, lexeme="("),
+                Token(token_type=TokenType.INTEGER, lexeme="1"),
+                Token(token_type=TokenType.PLUS, lexeme="+"),
+                Token(token_type=TokenType.INTEGER, lexeme="2"),
+                Token(token_type=TokenType.END_PARANTHESIS, lexeme=")"),
+                Token(token_type=TokenType.INTEGER, lexeme="3"),
+                Token(token_type=TokenType.END_OF_FILE, lexeme=""),
+            ],
+
+            VariantConstruction(
+                type_name=Identifier("point"),
+                variant_name=Identifier("d2"),
+                arguments=[
+                    BinaryOperation(
+                        left=IntegerLiteral(1),
+                        operator=Operator.ADD,
+                        right=IntegerLiteral(2)
+                    ),
+                    IntegerLiteral(3)
+                ]
+            )
+        ),
+
 
     ]
    )
