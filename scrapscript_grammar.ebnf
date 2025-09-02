@@ -21,6 +21,22 @@ statement ::= expression_statement | function_definition | type_definition
 
 function_definition ::= IDENTIFIER "=" expression
 
+(* Type definitions *)
+
+type_definition ::= IDENTIFIER ":" type_constructor type_expression
+
+type_expression ::= type_variant_clause+
+
+type_variant_clause ::= ["|"] type_variant
+
+type_variant ::= ATOM [type_parameter]
+
+type_parameter ::= IDENTIFIER | "(" type_expression ")"
+
+type_constructor ::= (IDENTIFIER "=>")*
+
+
+
 (* --- expressions ---*)
 (* Expressions consists of a prefix expression followed by any number *)
 (* of infix operations. This corresponds to the Pratt parser implemented *)
@@ -41,6 +57,18 @@ prefix_expression ::= IDENTIFIER
                     | "(" expression ")"
                     | literal
                     | pattern_match_expression
+                    | record_expression
+                    | variant_construction
+                    | list_literal
+
+list_literal ::= "[" [ expression ("," expression)* ] "]"
+
+
+(* Instantiate a object from a type *)
+variant_construction ::= IDENTIFIER "::" IDENTIFIER prefix_expression*
+
+record_expression ::= "{" [record_field ("," record_field)*] "}"
+record_field ::= IDENTIFIER ":" expression
 
 unary_expression ::= prefix_operator expression
 

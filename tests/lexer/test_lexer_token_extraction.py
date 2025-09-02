@@ -23,9 +23,17 @@ import pytest
 
         ([":"], [TokenType.COLON, TokenType.END_OF_FILE]),
 
+        (["::"], [TokenType.DOUBLE_COLON, TokenType.END_OF_FILE]),
+
         (["|"], [TokenType.PIPE, TokenType.END_OF_FILE]),
 
         (["hello"], [TokenType.IDENTIFIER, TokenType.END_OF_FILE]),
+        # _ is another token we can match against, we can't start identifiers with it
+        # (["_hello"], [TokenType.IDENTIFIER, TokenType.END_OF_FILE]),
+        # (["_123"], [TokenType.IDENTIFIER, TokenType.END_OF_FILE]),
+        # (["_1dsa23"], [TokenType.IDENTIFIER, TokenType.END_OF_FILE]),
+        (["abc123"], [TokenType.IDENTIFIER, TokenType.END_OF_FILE]),
+        (["abc_123"], [TokenType.IDENTIFIER, TokenType.END_OF_FILE]),
 
         (["+"], [TokenType.PLUS, TokenType.END_OF_FILE]),
         (["++"], [TokenType.DOUBLE_PLUS, TokenType.END_OF_FILE]),

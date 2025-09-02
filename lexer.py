@@ -24,6 +24,7 @@ class TokenType(str, Enum):
     WHITE_SPACE = "WHITE_SPACE"
     RIGHT_ARROW = "->"
     COLON = ":"
+    DOUBLE_COLON = ":"
     END_OF_FILE = "EOF"
     PIPE = "|"
     IDENTIFIER = "IDENTIFIER"
@@ -60,8 +61,9 @@ lexeme_mapper: Dict[str, TokenType] = {
     r"\s+": TokenType.WHITE_SPACE,
     r"\|": TokenType.PIPE,
     r";": TokenType.SEMI_COLON,
+    r"::": TokenType.DOUBLE_COLON,
     r":": TokenType.COLON,
-    r"[a-zA-Z]+": TokenType.IDENTIFIER,
+    r"[a-zA-Z]+[a-zA-Z0-9_]*": TokenType.IDENTIFIER,
     r"#[a-zA-Z]+": TokenType.ATOM,
     r'"([^`]*`[^`]*`)+[^`]*"': TokenType.INTERPOLATED_TEXT,
     r'"[^"]*"': TokenType.TEXT,
