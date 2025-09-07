@@ -1,65 +1,82 @@
-
 import sys
-from typing import Iterable, List
-from lexer import InvalidTokenException, extract_tokens
-from lexer import Token
-
+import argparse
 import logging
+from typing import List
+
+from evaluator import evaluate_node, evaluate_program
+from exceptions import ScrapError
+from lexer import InvalidTokenException, Token, extract_tokens
+from parser import Parser
+from scrapscript_ast import Program
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    stream=sys.stdout,
+    format='%(levelname)s: %(message)s'
+)
 
 
-logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
-
-
-def read_file(file_path: str) -> Iterable[str]:
-    return open(file_path, "r").readlines()
-
-
-def run(file_path: str):
-
-    # First read the file
-
-    logging.debug("Reading .scrap file")
+def run_interpreter(source_code: str):
+    """
+    Takes raw source code as a string and runs it through the
+    lexer, parser, and (eventually) evaluator.
+    """
+    logging.debug("--- Running Lexer ---")
     try:
-        raw_code = read_file(file_path=file_path)
+        tokens: List[Token] = extract_tokens(source_code.splitlines())
+        logging.debug(f"Tokens: {tokens}")
+    except InvalidTokenException as e:
+        logging.error("Lexer failed: Invalid token found.")
+        logging.error(e)
+        sys.exit(1)
     except Exception as e:
-        logging.error(f"Failed reading .scrap file: {e}")
+        logging.error(f"An unexpected error occurred during lexing: {e}")
         sys.exit(1)
 
-    logging.debug("Running lexer")
-    # Do the lexing
+    logging.debug("--- Running Parser ---")
     try:
-        tokens: List[Token] = extract_tokens(raw_code)
-        for token in tokens:
-            logging.debug(f"Found token: {token}")
-    except InvalidTokenException as e:
-        logging.error(f"Failed parsing token.")
-        logging.error(f"{e.__repr__()}")
+        parser = Parser(tokens)
+        ast: Program = parser.parse_program()
+        logging.debug(f"AST: {ast}")
+    except Exception as e:
+        logging.error(f"Parser failed: {e}")
+        sys.exit(1)
 
-    logging.debug("Running parser")
-    # Parse
+    logging.debug("--- Running Evaluator ---")
+    try:
+        result = evaluate_program(ast)
+        print("\n--- Result ---")
+        print(result)
+    except ScrapError as e:
+        logging.error(f"Runtime Error: {e}")
+        sys.exit(1)
 
-    logging.debug("Executing code")
-    # Execute
 
+def main():
+    """The main entry point for the CLI."""
+    parser = argparse.ArgumentParser(
+        description="Scrappy: A ScrapScript Interpreter"
+    )
 
-def print_help() -> None:
-    print("""Usage:
+    parser.add_argument(
+        "file",
+        nargs='?',
+        type=argparse.FileType('r'),
+        default=sys.stdin,
+        help="The .scrap file to evaluate. If omitted, reads from standard input."
+    )
 
-scrappy.py <filename>.scrap
-""")
+    args = parser.parse_args()
+
+    logging.debug("Reading source code...")
+    try:
+        source_code = args.file.read()
+    finally:
+        if args.file is not sys.stdin:
+            args.file.close()
+
+    run_interpreter(source_code)
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        logging.debug(f"sys.argv: {sys.argv}")
-        print_help()
-        sys.exit(1)
-
-    file_path = sys.argv[1]
-
-    if not file_path.endswith(".scrap"):
-        logging.error(
-            "I don't know how to run non-scrap files (file needs to end in .scrap)")
-        sys.exit(1)
-
-    run(file_path=file_path)
+    main()

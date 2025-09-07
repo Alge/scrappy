@@ -2,21 +2,14 @@ from dataclasses import dataclass
 from enum import Enum
 from types import MappingProxyType
 from typing import Dict, Iterable, Iterator, List, Optional
+from enums import Operator
 from lexer import Token, TokenType
+
+from enums import PrecedencePosition
 
 import logging
 
-
-class Operator(str, Enum):
-    MULTIPLY = "*"
-    DIVIDE = "/"
-    ADD = "+"
-    SUBTRACT = "-"
-
-
-class PrecedencePosition(str, Enum):
-    PREFIX = "PREFIX"
-    INFIX = "INFIX"
+from scrapscript_ast import *
 
 
 # Used for calculating the precendence of tokens
@@ -33,181 +26,6 @@ OPERATOR_PRECEDENCE: MappingProxyType[PrecedencePosition, MappingProxyType[Token
         })
     }
 )
-
-
-@dataclass
-class Expression():
-    ...
-
-
-@dataclass
-class Pattern():
-    # Base class for patterns
-    pass
-
-
-@dataclass
-class LiteralPattern(Pattern):
-    literal: 'Literal'
-
-
-@dataclass
-class WildcardPattern(Pattern):
-    pass
-
-
-@dataclass
-class VariablePattern(Pattern):
-    identifier: 'Identifier'
-
-
-@dataclass
-class PatternMatchExpression(Expression):
-    clauses: List['PatternClause']
-
-
-@dataclass
-class PatternClause():
-    pattern: Pattern
-    body: Expression
-
-
-@dataclass
-class Atom():
-    value: str
-
-
-@dataclass
-class Identifier(Expression):
-    name: str
-
-    def __repr__(self) -> str:
-        # Represents an identifier just by its name for clarity.
-        return self.name
-
-
-@dataclass
-class UnaryOperation(Expression):
-    expression: Expression
-    operator: Operator
-
-    def __repr__(self) -> str:
-        # Example: (- 5)
-        return f"({self.operator} {self.expression})"
-
-
-@dataclass
-class BinaryOperation(Expression):
-    left: Expression
-    right: Expression
-    operator: Operator
-
-    def __repr__(self) -> str:
-        # Example: (+ 1 (* 2 3))
-        return f"({self.operator.value} {self.left} {self.right})"
-
-
-@dataclass
-class Literal(Expression):
-    pass
-
-
-@dataclass
-class IntegerLiteral(Literal):
-    value: int
-
-    def __repr__(self) -> str:
-        # Represents a number literal simply by its value.
-        return str(self.value)
-
-
-@dataclass
-class FloatLiteral(Literal):
-    value: float
-
-    def __repr__(self) -> str:
-        # Represents a number literal simply by its value.
-        return str(self.value)
-
-
-@dataclass
-class TextLiteral(Literal):
-    value: str
-
-    def __repr__(self) -> str:
-        # Represents a number literal simply by its value.
-        return self.value
-
-
-@dataclass
-class InterpolatedTextLiteral(Literal):
-    value: str
-
-    def __repr__(self) -> str:
-        # Use backticks to distinguish from normal strings
-        return f'`{self.value}`'
-
-
-@dataclass
-class HexLiteral(Literal):
-    value: str  # TODO, maybe store as int?
-
-    def __repr__(self) -> str:
-        return f"Hex({self.value})"
-
-
-@dataclass
-class HashReference(Literal):
-    hash: str
-
-    def __repr__(self) -> str:
-        return self.hash
-
-
-@dataclass
-class Statement():
-    ...
-
-
-@dataclass
-class TypeDefinition(Statement):
-    name: Identifier
-    body: 'TypeExpression'
-
-
-@dataclass
-class TypeExpression():
-    variants: List['TypeVariant']
-    ...
-
-
-@dataclass
-class TypeVariant:
-    tag: Atom
-    parameter: Optional[Identifier | TypeExpression] = None
-
-
-@dataclass
-class VariantConstruction(Expression):
-    type_name: Identifier
-    variant_name: Identifier
-    arguments: List[Expression]
-
-
-@dataclass
-class ExpressionStatement(Statement):
-    expression: Expression
-
-
-@dataclass
-class FunctionDefinition(Statement):
-    name: Identifier
-    body: Expression
-
-
-@dataclass
-class Program():
-    declarations: List[Statement]
 
 
 class Parser:
@@ -308,7 +126,7 @@ class Parser:
 
         body = self.parse_expression()
 
-        return FunctionDefinition(name=Identifier(name=name), body=body)
+        return FunctionDefinitionStatement(name=name, body=body)
 
     @staticmethod
     def _can_start_prefix_expression(token: Token):
@@ -502,7 +320,7 @@ class Parser:
         raise Exception(
             f"Failed to parse operator, {token.token_type} is not a valid operator!")
 
-    def parse_type_definition(self) -> TypeDefinition:
+    def parse_type_definition(self) -> TypeDefinitionStatment:
         name = self.current.lexeme
         assert self.current.token_type == TokenType.IDENTIFIER
         self.advance()
@@ -511,7 +329,7 @@ class Parser:
 
         expression = self.parse_type_expression()
 
-        return TypeDefinition(name=Identifier(name=name), body=expression)
+        return TypeDefinitionStatment(name=Identifier(name=name), body=expression)
 
     def parse_type_expression(self) -> TypeExpression:
         variants: List[TypeVariant] = []
@@ -576,7 +394,7 @@ class Parser:
             case TokenType.HEXADECIMAL:
                 result = HexLiteral(self.current.lexeme)
             case TokenType.BASE64:
-                result = HashReference(self.current.lexeme)
+                result = Base64Literal(self.current.lexeme)
             case _:
                 raise Exception(f"Invalid literal: {self.current}")
 

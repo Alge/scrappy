@@ -1,27 +1,9 @@
 import logging
+from enums import Operator
 from lexer import Token, TokenType
-from parser import (
-    Atom,
-    Identifier,
-    LiteralPattern,
-    Parser,
-    BinaryOperation,
-    IntegerLiteral,
-    FloatLiteral,
-    Operator,
-    FunctionDefinition,
-    PatternClause,
-    PatternMatchExpression,
-    TextLiteral,
-    TypeDefinition,
-    TypeExpression,
-    TypeVariant,
-    UnaryOperation,
-    Program,
-    ExpressionStatement,
-    VariantConstruction,
-    WildcardPattern
-)
+
+from parser import Parser
+from scrapscript_ast import *
 
 from pytest import mark
 
@@ -211,8 +193,8 @@ def test_parse_expression(input, expected_output):
                Token(token_type=TokenType.TEXT, lexeme="Hello world!"),
            ],
 
-           FunctionDefinition(
-               name=Identifier("hello"),
+           FunctionDefinitionStatement(
+               name="hello",
                body=TextLiteral("Hello world!"),
            )
        ),
@@ -233,8 +215,8 @@ def test_parse_expression(input, expected_output):
                Token(token_type=TokenType.END_OF_FILE, lexeme=""),
            ],
            # Expected AST:
-           FunctionDefinition(
-               name=Identifier("f"),
+           FunctionDefinitionStatement(
+               name="f",
                body=PatternMatchExpression(
                    clauses=[
                        PatternClause(
@@ -264,8 +246,8 @@ def test_parse_expression(input, expected_output):
                Token(token_type=TokenType.END_OF_FILE, lexeme=""),
            ],
            # Expected AST:
-           FunctionDefinition(
-               name=Identifier("f"),
+           FunctionDefinitionStatement(
+               name="f",
                body=PatternMatchExpression(
                    clauses=[
                        PatternClause(
@@ -311,7 +293,7 @@ def test_parse_function(input, expected_output):
                 Token(token_type=TokenType.END_OF_FILE, lexeme=""),
             ],
             # Expected AST:
-            TypeDefinition(
+            TypeDefinitionStatment(
                 name=Identifier("scoop"),
                 body=TypeExpression(
                     variants=[
@@ -336,7 +318,7 @@ def test_parse_function(input, expected_output):
                 Token(token_type=TokenType.END_OF_FILE, lexeme=""),
             ],
             # Expected AST:
-            TypeDefinition(
+            TypeDefinitionStatment(
                 name=Identifier("result"),
                 body=TypeExpression(
                     variants=[
@@ -368,7 +350,7 @@ def test_parse_function(input, expected_output):
                 Token(token_type=TokenType.END_OF_FILE, lexeme=""),
             ],
             # Expected AST:
-            TypeDefinition(
+            TypeDefinitionStatment(
                 name=Identifier("person"),
                 body=TypeExpression(
                     variants=[
@@ -404,7 +386,7 @@ def test_parse_function(input, expected_output):
                 Token(token_type=TokenType.END_OF_FILE, lexeme=""),
             ],
             # Expected AST:
-            TypeDefinition(
+            TypeDefinitionStatment(
                 name=Identifier("person"),
                 body=TypeExpression(
                     variants=[
@@ -466,8 +448,8 @@ def test_parse_type_definition(input_tokens, expected_ast):
             ],
             Program(
                 declarations=[
-                    FunctionDefinition(
-                        name=Identifier("f"),
+                    FunctionDefinitionStatement(
+                        name="f",
                         body=IntegerLiteral(1)
                     )
                 ]
@@ -486,8 +468,8 @@ def test_parse_type_definition(input_tokens, expected_ast):
             ],
             Program(
                 declarations=[
-                    FunctionDefinition(
-                        name=Identifier("f"),
+                    FunctionDefinitionStatement(
+                        name="f",
                         body=IntegerLiteral(1)
                     ),
                     ExpressionStatement(

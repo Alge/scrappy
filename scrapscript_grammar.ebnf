@@ -48,18 +48,39 @@ expression ::= prefix_expression (infix_operation)*
 
 pattern_match_expression ::= ("|" pattern "->" expression)+
 
-pattern ::= literal | IDENTIFIER | "_"
+pattern ::= literal_pattern
+          | IDENTIFIER  
+          | "_"
+          | list_pattern
+          | record_pattern
+          | variant_pattern
+          | text_pattern
+
+list_pattern ::= "[" "]"
+               | "[" pattern ("," pattern)* "]" 
+               | "[" pattern ("," pattern)* "]" "++" pattern
+               | pattern ">+" pattern
+
+text_pattern ::= TEXT "++" pattern
+
+variant_pattern ::= "#" IDENTIFIER [pattern]*
+
+record_pattern ::= "{" [record_pattern_field ("," record_pattern_field)*] "}"
+record_pattern_field ::= IDENTIFIER "=" pattern | ".." pattern
 
 infix_operation ::= infix_operator expression
 
 prefix_expression ::= IDENTIFIER
-                    | unary_expression
+                    | unary_expression  
                     | "(" expression ")"
                     | literal
                     | pattern_match_expression
                     | record_expression
                     | variant_construction
                     | list_literal
+                    | function_application
+
+function_application ::= prefix_expression (prefix_expression)+
 
 list_literal ::= "[" [ expression ("," expression)* ] "]"
 
@@ -76,11 +97,10 @@ unary_expression ::= prefix_operator expression
 (* "expression infix_operator expression" already matches the rules *)
 (* binary_expression ::= expression infix_operator expression *)
 
-infix_operator ::= "+" | "-" | "*" | "/"
+infix_operator ::= ";" | "=" | "->" | "+" | "-" | "*" | "/" | "++" | "+<" | ">+" | ">>"
 prefix_operator ::= "-" | "!"
 
-literal ::= INTEGER | FLOAT | TEXT | HEX | BASE64
-
+literal ::= INTEGER | FLOAT | TEXT | HEX_BYTE | BASE64 | HOLE
 
 (* ======================================================= *)
 (*   Precedence and Associativity Table                    *)
@@ -88,9 +108,14 @@ literal ::= INTEGER | FLOAT | TEXT | HEX | BASE64
 (* ------------------------------------------------------- *)
 (* | Operator | Type  | Precedence | Associativity         *)
 (* ------------------------------------------------------- *)
-(* |   + -    | Infix |     10     | Left                  *)
-(* |   * /    | Infix |     20     | Left                  *)
-(* |    -     | Prefix|     30     | (N/A - Right)         *)
-(* |    !     | Prefix|     30     | (N/A - Right)         *)
+(* | ;      | Infix | 1      | Right                       *)
+(* | =      | Infix | 2      | Right                       *)
+(* | >>     | Infix | 3      | Left                        *)
+(* | ->     | Infix | 5      | Right                       *)
+(* | ++     | Infix | 6      | Right                       *)
+(* | + -    | Infix | 10     | Left                        *)
+(* | +< >+  | Infix | 11     | Left                        *)
+(* | * /    | Infix | 20     | Left                        *)
+(* | - !    | Prefix| 30     | (N/A - Right)               *)
+(* | App    | Infix | 40     | Left (implicit)             *)
 (* ------------------------------------------------------- *)
-
